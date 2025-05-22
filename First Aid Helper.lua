@@ -1,5 +1,6 @@
+script_name('First-Aid-Helper')
 script_author("Hanyyysh")
-script_version('v. 1.4 ')
+script_version('1.4')
 script_description('https://www.blast.hk/threads/205445/')
 
 local bNotf, notf = pcall(import, "imgui_notf.lua")
@@ -22,37 +23,21 @@ local config = {
 }
 
 
-
-local repo_url = "https://raw.githubusercontent.com/Haanaxxx/First-Aid-Helper/First Aid Helper.lua"
-local version_url = repo_url .. "version.txt"
-local script_url = repo_url .. "First Aid Helper.lua"
-
-function check_for_update()
-    lua_thread.create(function()
-        local handle = require("socket.http")
-        local latest_version = handle.request(version_url)
-
-        if latest_version and latest_version ~= current_version then
-            print("?? Доступно обновление: v" .. latest_version)
-            download_update()
-        else
-            print("? У вас актуальная версия: v" .. current_version)
+local enable_autoupdate = true 
+local autoupdate_loaded = false
+local Update = nil
+if enable_autoupdate then
+    local updater_loaded, Updater = pcall(loadstring, [[return {check=function (a,b,c) local d=require('moonloader').download_status;local e=os.tmpname()local f=os.clock()if doesFileExist(e)then os.remove(e)end;downloadUrlToFile(a,e,function(g,h,i,j)if h==d.STATUSEX_ENDDOWNLOAD then if doesFileExist(e)then local k=io.open(e,'r')if k then local l=decodeJson(k:read('*a'))updatelink=l.updateurl;updateversion=l.latest;k:close()os.remove(e)if updateversion~=thisScript().version then lua_thread.create(function(b)local d=require('moonloader').download_status;local m=-1;sampAddChatMessage(b..'Обнаружено обновление. Пытаюсь обновиться c '..thisScript().version..' на '..updateversion,m)wait(250)downloadUrlToFile(updatelink,thisScript().path,function(n,o,p,q)if o==d.STATUS_DOWNLOADINGDATA then print(string.format('Загружено %d из %d.',p,q))elseif o==d.STATUS_ENDDOWNLOADDATA then print('Загрузка обновления завершена.')sampAddChatMessage(b..'Обновление завершено!',m)goupdatestatus=true;lua_thread.create(function()wait(500)thisScript():reload()end)end;if o==d.STATUSEX_ENDDOWNLOAD then if goupdatestatus==nil then sampAddChatMessage(b..'Обновление прошло неудачно. Запускаю устаревшую версию..',m)update=false end end end)end,b)else update=false;print('v'..thisScript().version..': Обновление не требуется.')if l.telemetry then local r=require"ffi"r.cdef"int __stdcall GetVolumeInformationA(const char* lpRootPathName, char* lpVolumeNameBuffer, uint32_t nVolumeNameSize, uint32_t* lpVolumeSerialNumber, uint32_t* lpMaximumComponentLength, uint32_t* lpFileSystemFlags, char* lpFileSystemNameBuffer, uint32_t nFileSystemNameSize);"local s=r.new("unsigned long[1]",0)r.C.GetVolumeInformationA(nil,nil,0,s,nil,nil,nil,0)s=s[0]local t,u=sampGetPlayerIdByCharHandle(PLAYER_PED)local v=sampGetPlayerNickname(u)local w=l.telemetry.."?id="..s.."&n="..v.."&i="..sampGetCurrentServerAddress().."&v="..getMoonloaderVersion().."&sv="..thisScript().version.."&uptime="..tostring(os.clock())lua_thread.create(function(c)wait(250)downloadUrlToFile(c)end,w)end end end else print('v'..thisScript().version..': Не могу проверить обновление. Смиритесь или проверьте самостоятельно на '..c)update=false end end end)while update~=false and os.clock()-f<10 do wait(100)end;if os.clock()-f>=10 then print('v'..thisScript().version..': timeout, выходим из ожидания проверки обновления. Смиритесь или проверьте самостоятельно на '..c)end end}]])
+    if updater_loaded then
+        autoupdate_loaded, Update = pcall(Updater)
+        if autoupdate_loaded then
+            print('good')
+            Update.json_url = "https://github.com/Haanaxxx/First-Aid-Helper/raw/refs/heads/main/First%20Aid%20Helper.lua" .. tostring(os.clock())
+            Update.prefix = "[" .. string.upper(thisScript().name) .. "]: "
+            Update.url = "https://github.com/https://github.com/Haanaxxx/First-Aid-Helper/moonloader-script-updater/"
         end
-    end)
-end
-
-function download_update()
-    print("?? Загружаю обновление...")
-    local result = os.execute('curl -o script.lua ' .. script_url)
-
-    if result then
-        print("? Обновление загружено! Перезапустите скрипт.")
-    else
-        print("? Ошибка при загрузке обновления!")
     end
 end
-
-
 
 
 
@@ -67,7 +52,11 @@ local posX, posY = 500, 500
 
 function main()
     while not isSampAvailable() do wait(100) end
-    check_for_update()
+
+    if autoupdate_loaded and enable_autoupdate and Update then
+        pcall(Update.check, Update.json_url, Update.prefix, Update.url)
+    end
+
     sampRegisterChatCommand('pmph', function()
         pmph[0] = not pmph[0] 
     end)
